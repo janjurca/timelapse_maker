@@ -1,5 +1,8 @@
 #!/bin/bash
 
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 function print_help {
  printf "Invalid option: -$OPTARG \nHelp:\n\t -p [path] photo path\n\t -d [dir_name] working directory standart id darktable_exported\n\t -c enable copying of results to root dir\n\t -s skip dir if dir resized exist\n\t -f force the removing of resize folder\n\t -r select the resolution of resized image eg 1920x1080 is default  \n"  >&2
 }
@@ -8,11 +11,11 @@ PWD_DIR=$(pwd)
 COPY=0
 SKIP=0
 FORCE=0
-while getopts :p:d:cshfr: opt $@; do
+while getopts :p:d:cshfr: opt "$@"; do
   case $opt in
-    p) PHOTO_DIR=$OPTARG ;; # the root path where to find dirs with exported photos
+    p) PHOTO_DIR="$OPTARG" ;; # the root path where to find dirs with exported photos
 
-    d) WORK_DIR=$OPTARG ;;
+    d) WORK_DIR="$OPTARG" ;;
 
     c) COPY=1 ;; #rename and copy the output file movies to root dir
 
@@ -20,7 +23,7 @@ while getopts :p:d:cshfr: opt $@; do
 
     f) FORCE=1 ;; #force remove the resize folder
 
-    r) RESOLUTION=$OPTARG ;; #select the resolution of resized image
+    r) RESOLUTION="$OPTARG" ;; #select the resolution of resized image
 
     h) print_help & exit 0  ;;
 
@@ -28,13 +31,10 @@ while getopts :p:d:cshfr: opt $@; do
   esac
 done
 
-DIRS=$(find ${PHOTO_DIR-$PWD_DIR} -type d | grep ${WORK_DIR-darktable_exported}$)
-
-
-for dir in $DIRS 
+find "${PHOTO_DIR-$PWD_DIR}" -type d | grep "${WORK_DIR-darktable_exported}$" | while read dir
 do
-	cd $dir
-	echo "Entering $dir"
+	cd "$dir"
+	printf "Processing: $dir "
 	if test -d resized; then
 		echo "Directory resized exists in $dir"
 		if [ $SKIP -eq 1 ]; then
@@ -46,28 +46,26 @@ do
 				read bool
 				if [ $bool = "y" ]; then
 					rm -rf resized
-				else 
+				else
 					continue
-				fi	
+				fi
 			else
 				rm -rf resized
 			fi
-		fi	
+		fi
 	fi
 
 	mkdir resized
-	echo "Resizing in $dir"
+	printf " ${RED}resizing${NC} "
 	mogrify -monitor -path resized -resize ${RESOLUTION-"1920x1080"} *.jpg >> $PWD_DIR/log  2>> $PWD_DIR/err # If you want to keep the aspect ratio, remove the exclamation mark (!)
 	cd resized
-	echo "Making video"
+	printf " ${RED}making video${NC} "
 	ffmpeg -r 24 -pattern_type glob -i '*.jpg' -c:v copy output.avi >> $PWD_DIR/log 2>> $PWD_DIR/err
 
 	ffmpeg -i output.avi -c:v libx264 -preset slow -crf 22 output-final.mkv >> $PWD_DIR/log 2>> $PWD_DIR/err
 	if [ $COPY -eq 1 ]; then
-		echo "Copying from $dir to $PWD_DIR"
-		NAME=$(echo $dir | awk -F'/' '{ for (i = (NF-2); i <NF; i++){printf("%s",$i); if (i != (NF-1)){ printf("-")}} printf("\n")}')
+		NAME=$(echo "$dir" | awk -F'/' '{ for (i = (NF-2); i <NF; i++){printf("%s",$i); if (i != (NF-1)){ printf("-")}} printf("\n")}')
 		cp output-final.mkv $PWD_DIR/$NAME.mkv
 	fi
-	echo "$dir is done!"
+	printf " ${RED}done${NC}\n"
 done
-
