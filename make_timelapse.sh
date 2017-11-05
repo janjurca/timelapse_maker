@@ -36,19 +36,13 @@ do
 	cd "$dir"
 	printf "Processing: $dir "
 	if test -d resized; then
-		echo "Directory resized exists in $dir"
 		if [ $SKIP -eq 1 ]; then
-			echo "skipping directory"
+			echo "Already made. Skipping"
 			continue
 		else
 			if [ $FORCE -eq 0 ]; then
-				echo "Remove it and continue or stop the process? [y/n]"
-				read bool
-				if [ $bool = "y" ]; then
-					rm -rf resized
-				else
-					continue
-				fi
+				echo "Already made. Skipping"
+                continue
 			else
 				rm -rf resized
 			fi
@@ -57,15 +51,15 @@ do
 
 	mkdir resized
 	printf " ${RED}resizing${NC} "
-	mogrify -monitor -path resized -resize ${RESOLUTION-"1920x1080"} *.jpg >> $PWD_DIR/log  2>> $PWD_DIR/err # If you want to keep the aspect ratio, remove the exclamation mark (!)
+	mogrify -monitor -path resized -resize ${RESOLUTION-"1920x1080"} *.jpg >> /dev/null  2>> /dev/null # If you want to keep the aspect ratio, remove the exclamation mark (!)
 	cd resized
 	printf " ${RED}making video${NC} "
-	ffmpeg -r 24 -pattern_type glob -i '*.jpg' -c:v copy output.avi >> $PWD_DIR/log 2>> $PWD_DIR/err
+	ffmpeg -r 24 -pattern_type glob -i '*.jpg' -c:v copy output.avi >> /dev/null 2>> /dev/null
 
-	ffmpeg -i output.avi -c:v libx264 -preset slow -crf 22 output-final.mkv >> $PWD_DIR/log 2>> $PWD_DIR/err
+	ffmpeg -i output.avi -c:v libx264 -preset slow -crf 22 output-final.mkv >> /dev/null 2>> /dev/null
 	if [ $COPY -eq 1 ]; then
 		NAME=$(echo "$dir" | awk -F'/' '{ for (i = (NF-2); i <NF; i++){printf("%s",$i); if (i != (NF-1)){ printf("-")}} printf("\n")}')
-		cp output-final.mkv $PWD_DIR/$NAME.mkv
+		cp output-final.mkv $PHOTO_DIR/$NAME.mkv
 	fi
 	printf " ${RED}done${NC}\n"
 done
