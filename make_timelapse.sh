@@ -3,6 +3,7 @@
 set -e
 
 RED='\033[0;31m'
+GREEN='\e[32m'
 NC='\033[0m' # No Color
 
 function print_help {
@@ -46,14 +47,14 @@ fi
 IMAGE_SOURCE=${WORK_DIR}
 if [[ ${RESIZE-"0"} != "0" ]]; then
     mkdir "${WORK_DIR}/resized"
-    printf " ${RED}resizing${NC} "
+    printf " ${GREEN}resizing${NC} "
     mogrify -monitor -path "${WORK_DIR}/resized" -resize ${RESIZE-"1920x1080"} *.jpg >> /dev/null  2>> /dev/null # If you want to keep the aspect ratio, remove the exclamation mark (!)
     IMAGE_SOURCE="${WORK_DIR}/resized"
 fi
 
-printf " ${RED}making video${NC} "
+printf " ${GREEN}making video${NC} "
 rm output.avi
 ffmpeg -r 24 -pattern_type glob -i "${IMAGE_SOURCE}/*.jpg" -c:v copy output.avi > /dev/null 2>/dev/null
 rm output-final.mkv
 ffmpeg -i output.avi -c:v libx264 -preset slow -crf ${CRF-23} output-final.mkv > /dev/null
-printf " ${RED}Done${NC}\n"
+printf " ${GREEN}Done${NC}\n"
