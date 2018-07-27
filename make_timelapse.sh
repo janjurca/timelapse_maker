@@ -53,7 +53,7 @@ if [[ ${RESIZE-"0"} != "0" ]]; then
 fi
 
 printf " ${GREEN}making video${NC} "
-rm output.avi
+rm output.avi || true
 ffmpeg -r 24 -pattern_type glob -i "${IMAGE_SOURCE}/*.jpg" -c:v copy output.avi > /dev/null 2>/dev/null
 rm output-final.mkv
 ffmpeg -i output.avi -c:v libx264 -preset slow -crf ${CRF-23} output-final.mkv > /dev/null
